@@ -8,7 +8,11 @@ Deploy the example [demo-runtime-layer-function](../examples/demo-runtime-layer-
 
 You can build the custom runtime using a number of tools, including the the [AWS Command Line Interface (AWS CLI)](https://aws.amazon.com/cli/), or with infrastructure as code tools such as [AWS CloudFormation](https://aws.amazon.com/cloudformation/), [AWS Serverless Application Model (AWS SAM)](https://aws.amazon.com/serverless/sam/), [Serverless Framework](https://serverless.com/framework/), and [AWS Cloud Development Kit (AWS CDK)](https://aws.amazon.com/cdk/).
 
-## AWS SAM
+The gist:
+- [build](#build) the layer locally
+- [deploy](#deploying-to-the-aws-cloud) the layer to the AWS cloud
+
+## Build
 
 AWS SAM deploys the custom runtime as a Lambda layer. You can amend the template to also stores the resulting layer name in AWS Systems Manager Parameter Store for easier reference in other templates
 
@@ -44,16 +48,18 @@ You can build the custom runtime using Docker. This uses a Linux-based Lambda-li
 sam build --parallel --use-container
 ```
 
-### C) Build using PowerShell for Windows
+### C) Build using PowerShell
 
-You can use native PowerShell for Windows to download and extract the custom runtime files. This performs the same file copy functionality as the Makefile. It adds the files to the source folders rather than a build location for subsequent deployment with AWS SAM. Use this option for Windows without WSL or Docker.
+You can use native PowerShell (on Windows or elsewhere) to download and extract the custom runtime files. This performs the same file copy functionality as the Makefile. It adds the files to the source folders rather than a build location for subsequent deployment with AWS SAM or AWS PowerShell modules. Use this option for as desired from anywhere PowerShell runs, and without WSL or Docker.
 
-```shell
+```powershell
 .\build-PwshRuntimeLayer
 ```
 
-### Deploying to the AWS Cloud
+## Deploying to the AWS Cloud
+There are multiple ways to deploy the layer to the AWS cloud. Here are a few:
 
+### Deploy Via AWS SAM
 Use AWS SAM to deploy the runtime and optional SSM parameter to your AWS account. Run a guided deployment to set the default parameters for the first deploy.
 
 ```shell
@@ -64,7 +70,42 @@ For subsequent deployments you can use `sam deploy`.
 
 Enter a **Stack Name** such as `powershell-runtime` and accept the remaining initial defaults.
 
-### [AWS Command Line Interface (AWS CLI)](https://aws.amazon.com/cli/)
+### Deploy Via PowerShell (no SAM)
+Info about deploying the layer via strictly PowerShell (no SAM)
+
+#### As a CloudFormation stack
+Using AWS PowerShell modules for stack deployment differs a bit from using SAM:
+- involves an additional action: uploading the layer to an S3 bucket such that the CloudFormation ("CFN") can access the ZIP archive when creating the Lambda layer version
+- uses a "pure" CloudFormation template (with no `AWS::Serverless` transform)
+
+After the building the layer locally (see [build](#build) above), and to deploy the CFN stack:
+```PowerShell
+## get to the Runtime folder in the repo clone
+Set-Location aws-lambda-powershell-runtime/powershell-runtime
+
+## create ZIP archive of layer contents
+Compress-Archive -Path ./layers/runtimeLayer/ -DestinationPath ./PWSHRuntimeLayerContents.zip
+
+## upload layer contents archive to some S3 destination
+Write-S3Object -BucketName mycoolbucket -File ./PWSHRuntimeLayerContents.zip -Key tmp/lmlayers/PWSHRuntimeLayerContents.zip
+
+## params for deploy CFN stack, with ZIP file S3 bucket and key for CFN template params
+$hshParamForNewCFNStack = @{
+    StackName = "MyPSLambdaLayerStack"
+    Parameter =
+        @{ParameterKey = "LayerContentS3Bucket"; ParameterValue = "aws-sam-cli-managed-default-samclisourcebucket-fkew1jk6e2ni"},
+        @{ParameterKey = "LayerContentS3Key"; ParameterValue = "tmp/lmlayers/PWSHRuntimeLayerContents.zip"}
+    TemplateBody = Get-Content -Raw -Path ./template_CFNOnly.yml
+    OutVariable = "oNewCFNStackArn"
+}
+## deploy CFN stack ("splatting" parameters to cmdlet)
+New-CFNStack @hshParamForNewCFNStack
+
+## once stack deploy is done, see the stack resources
+$oNewCFNStackArn | Get-CFNStack
+```
+
+### Deploy Via [AWS Command Line Interface (AWS CLI)](https://aws.amazon.com/cli/)
 
 coming soon...
 
