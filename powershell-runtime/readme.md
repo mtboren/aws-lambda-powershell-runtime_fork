@@ -93,7 +93,7 @@ Write-S3Object -BucketName mycoolbucket -File ./PWSHRuntimeLayerContents.zip -Ke
 $hshParamForNewCFNStack = @{
     StackName = "MyPSLambdaLayerStack"
     Parameter =
-        @{ParameterKey = "LayerContentS3Bucket"; ParameterValue = "aws-sam-cli-managed-default-samclisourcebucket-fkew1jk6e2ni"},
+        @{ParameterKey = "LayerContentS3Bucket"; ParameterValue = "mycoolbucket"},
         @{ParameterKey = "LayerContentS3Key"; ParameterValue = "tmp/lmlayers/PWSHRuntimeLayerContents.zip"}
     TemplateBody = Get-Content -Raw -Path ./template_CFNOnly.yml
     OutVariable = "oNewCFNStackArn"
