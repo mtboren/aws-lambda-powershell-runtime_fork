@@ -102,7 +102,7 @@ $hshParamForNewCFNStack = @{
 New-CFNStack @hshParamForNewCFNStack
 
 ## once stack deploy is done, see the stack resources
-$oNewCFNStackArn | Get-CFNStack
+$oNewCFNStackArn | Get-CFNStack | Get-CFNStackResourceSummary
 ```
 
 ### Deploy Via [AWS Command Line Interface (AWS CLI)](https://aws.amazon.com/cli/)

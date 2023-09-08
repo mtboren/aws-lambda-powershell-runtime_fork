@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: aws-lambda-powershell-runtime with CloudFormation only (no SAM transform)
+Parameters:
+  LayerContentS3Bucket:
+    Type: String
+    Description: Name of S3 bucket with ZIP archive of layer contents
+  LayerContentS3Key:
+    Type: String
+    Description: S3 key of ZIP archive of layer contents (which is in given S3 bucket)
+##########################################################################
+#  Globals & Parameters                                                  #
+##########################################################################
+Resources:
+##########################################################################
+#  Lambda layers                                                         #
+##########################################################################
+  PwshRuntimeLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      Description: Lambda Layer containing PowerShell
+      Content:
+        S3Bucket: {Ref: LayerContentS3Bucket}
+        S3Key: {Ref: LayerContentS3Key}
+      CompatibleRuntimes:
+        - provided.al2
+# Optional AWS Systems Manager Parameter Store to store Layer ARN for referencing in further templates.
+#  PwshRuntimeParameter:
+#    Type: AWS::SSM::Parameter
+#    Properties:
+#      Name: lambda-powershell-runtime-latest-version-arn
+#      Description: PwshRuntime Layer Name
+#      Type: String
+#      Value: !Ref PwshRuntimeLayer
+
+##########################################################################
+#  OUTPUTS                                                               #
+##########################################################################
+Outputs:
+  PwshRuntimeLayer:
+    Value: !Ref PwshRuntimeLayer
+    Description: PwshRuntimeLayer Layer ARN
